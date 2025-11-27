@@ -26,9 +26,11 @@ interface BoardColumnProps {
   column: Column;
   tasks: Task[];
   isOverlay?: boolean;
+  estimatedMinHeight?: number;
+  onSelectTask?: (taskId: string) => void;
 }
 
-export function BoardColumn({ column, tasks, isOverlay }: BoardColumnProps) {
+export function BoardColumn({ column, tasks, isOverlay, estimatedMinHeight }: BoardColumnProps) {
   const tasksIds = useMemo(() => {
     return tasks.map((task) => task.id);
   }, [tasks]);
@@ -49,7 +51,7 @@ export function BoardColumn({ column, tasks, isOverlay }: BoardColumnProps) {
     transform: CSS.Translate.toString(transform),
   };
 
-  const variants = cva('w-[350px] max-w-full bg-primary-foreground flex flex-col flex-shrink-0 snap-start', {
+  const variants = cva('w-[350px] max-w-full bg-primary-foreground flex flex-col flex-shrink-0 snap-start h-full', {
     variants: {
       dragging: {
         default: 'border-2 border-transparent',
@@ -75,7 +77,10 @@ export function BoardColumn({ column, tasks, isOverlay }: BoardColumnProps) {
         <span className="ml-auto"> {column.title}</span>
       </CardHeader>
       <ScrollArea>
-        <CardContent className="flex flex-grow flex-col gap-2 p-2">
+        <CardContent
+          className="flex flex-grow flex-col gap-2 p-2"
+          style={estimatedMinHeight ? { minHeight: estimatedMinHeight } : undefined}
+        >
           <SortableContext items={tasksIds}>
             {tasks.map((task) => (
               <TaskCard key={task.id} task={task} />
@@ -90,7 +95,7 @@ export function BoardColumn({ column, tasks, isOverlay }: BoardColumnProps) {
 export function BoardContainer({ children }: { children: React.ReactNode }) {
   const dndContext = useDndContext();
 
-  const variations = cva('flex', {
+  const variations = cva('flex h-full', {
     variants: {
       dragging: {
         default: 'snap-x snap-mandatory',
@@ -105,7 +110,7 @@ export function BoardContainer({ children }: { children: React.ReactNode }) {
         dragging: dndContext.active ? 'active' : 'default',
       })}
     >
-      <div className="flex gap-4 items-start flex-row justify-start p-4">{children}</div>
+      <div className="flex gap-4 items-stretch flex-row justify-start p-4 h-full">{children}</div>
       <ScrollBar orientation="horizontal" />
     </ScrollArea>
   );

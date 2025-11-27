@@ -2,7 +2,7 @@ import type { UniqueIdentifier } from '@dnd-kit/core';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { cva } from 'class-variance-authority';
-import { Calendar, BarChart2, GripVertical, AlertCircle } from 'lucide-react';
+import { Calendar, BarChart2, AlertCircle } from 'lucide-react';
 
 import { Badge } from './ui/badge';
 import { Card, CardContent, CardFooter, CardHeader } from './ui/card';
@@ -82,17 +82,15 @@ export function TaskCard({ task, isOverlay }: TaskCardProps) {
       <CardHeader
         {...attributes}
         {...listeners}
-        className="px-3 py-3 space-between flex flex-row border-b-2 border-secondary relative cursor-grab active:cursor-grabbing"
+        className="px-3 py-3 flex flex-row items-center gap-2 space-y-0 border-b-2 border-secondary relative cursor-grab active:cursor-grabbing"
       >
-        <span className="sr-only">Move task</span>
-        <GripVertical className="text-secondary-foreground/50 -ml-2" />
-        {task.priority === 'high' && (
-          <div className="flex-shrink-0 mt-0.5 ml-1">
-            <AlertCircle className="w-4 h-4 text-red-500" />
-          </div>
-        )}
-        <h3 className="text-sm font-medium text-gray-900 leading-5 ml-2 flex-1 truncate">{task.content}</h3>
-        <Badge variant={'outline'} className="ml-2 font-semibold">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          {task.priority === 'high' && (
+            <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+          )}
+          <h3 className="text-sm font-medium text-gray-900 leading-5 truncate">{task.content}</h3>
+        </div>
+        <Badge variant={'outline'} className="font-semibold flex-shrink-0">
           {task.key}
         </Badge>
       </CardHeader>

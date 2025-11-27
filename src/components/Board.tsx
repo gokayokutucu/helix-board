@@ -1,14 +1,19 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Announcements,
+  closestCenter,
+  type CollisionDetection,
   DndContext,
   type DragEndEvent,
   type DragOverEvent,
   DragOverlay,
   type DragStartEvent,
+  getFirstCollision,
   KeyboardSensor,
   MouseSensor,
+  pointerWithin,
+  rectIntersection,
   TouchSensor,
   UniqueIdentifier,
   useSensor,
@@ -185,26 +190,87 @@ const initialTasks: Task[] = [
   },
 ];
 
+const CARD_HEIGHT = 140;
+const MIN_CARD_ROWS = 1.5;
+
+function getMinColumnTaskCount(cols: Column[], tasks: Task[]) {
+  const maxTasks = getMaxTasksPerColumn(cols, tasks);
+  return Math.max(maxTasks + MIN_CARD_ROWS, MIN_CARD_ROWS);
+}
+
+const collisionDetectionStrategy: CollisionDetection = (args) => {
+  const { active, droppableContainers, pointerCoordinates } = args;
+  if (!active) return [];
+
+  const activeType = active.data.current?.type;
+  if (activeType === 'Column') {
+    return closestCenter(args);
+  }
+
+  const pointerCollisions = pointerWithin(args);
+
+  if (pointerCollisions.length > 0 && pointerCoordinates) {
+    const prioritized = pointerCollisions
+      .map((collision) => {
+        const container = droppableContainers.find((item) => item.id === collision.id);
+        const rect = container?.rect.current;
+        const translatedRect = (rect as any)?.translated;
+        const resolvedRect = translatedRect ?? rect;
+        if (!resolvedRect) {
+          return { collision, distance: Number.POSITIVE_INFINITY };
+        }
+        const rectCenter = {
+          x: resolvedRect.left + resolvedRect.width / 2,
+          y: resolvedRect.top + resolvedRect.height / 2,
+        };
+        const dx = rectCenter.x - pointerCoordinates.x;
+        const dy = rectCenter.y - pointerCoordinates.y;
+        const distance = dx * dx + dy * dy;
+        return { collision, distance };
+      })
+      .sort((a, b) => a.distance - b.distance);
+
+    return prioritized.length ? [prioritized[0].collision] : pointerCollisions;
+  }
+
+  const intersections = rectIntersection(args);
+  if (intersections.length > 0) {
+    return [intersections[0]];
+  }
+
+  const closest = closestCenter(args);
+  const first = getFirstCollision(closest);
+  return first ? [first] : [];
+};
+
+function getMaxTasksPerColumn(cols: Column[], tasks: Task[]) {
+  if (cols.length === 0) return 0;
+  return Math.max(
+    ...cols.map((col) => tasks.filter((task) => task.columnId === col.id).length),
+    0
+  );
+}
+
 export function Board() {
   const [columns, setColumns] = useState<Column[]>(defaultCols);
   const pickedUpTaskColumn = useRef<ColumnId | null>(null);
   const columnsId = useMemo(() => columns.map((col) => col.id), [columns]);
 
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [isDraggingTask, setIsDraggingTask] = useState(false);
+  const [minColumnTaskCount, setMinColumnTaskCount] = useState(() => getMinColumnTaskCount(defaultCols, initialTasks));
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [isPanelMaximized, setIsPanelMaximized] = useState(false);
 
   const [activeColumn, setActiveColumn] = useState<Column | null>(null);
 
   const [activeTask, setActiveTask] = useState<Task | null>(null);
-  const maxTasksPerColumn = useMemo(
-    () =>
-      Math.max(
-        ...columns.map((col) => tasks.filter((task) => task.columnId === col.id).length),
-        1
-      ),
-    [columns, tasks]
-  );
+  const estimatedMinHeight = useMemo(() => minColumnTaskCount * CARD_HEIGHT, [minColumnTaskCount]);
+
+  useEffect(() => {
+    if (isDraggingTask) return;
+    setMinColumnTaskCount(getMinColumnTaskCount(columns, tasks));
+  }, [columns, tasks, isDraggingTask]);
   const selectedTask = useMemo(
     () => tasks.find((task) => task.id === selectedTaskId) ?? null,
     [selectedTaskId, tasks]
@@ -237,6 +303,7 @@ export function Board() {
         const startColumn = columns[startColumnIdx];
         return `Picked up Column ${startColumn?.title} at position: ${startColumnIdx + 1} of ${columnsId.length}`;
       } else if (active.data.current?.type === 'Task') {
+        setIsDraggingTask(true);
         pickedUpTaskColumn.current = active.data.current.task.columnId;
         const { tasksInColumn, taskPosition, column } = getDraggingTaskData(active.id, pickedUpTaskColumn.current);
         return `Picked up Task ${active.data.current.task.content} at position: ${taskPosition + 1} of ${
@@ -268,6 +335,7 @@ export function Board() {
     onDragEnd({ active, over }) {
       if (!hasDraggableData(active) || !hasDraggableData(over)) {
         pickedUpTaskColumn.current = null;
+        setIsDraggingTask(false);
         return;
       }
       if (active.data.current?.type === 'Column' && over.data.current?.type === 'Column') {
@@ -289,9 +357,11 @@ export function Board() {
         return `Task was dropped into position ${taskPosition + 1} of ${tasksInColumn.length} in column ${column?.title}`;
       }
       pickedUpTaskColumn.current = null;
+      setIsDraggingTask(false);
     },
     onDragCancel({ active }) {
       pickedUpTaskColumn.current = null;
+      setIsDraggingTask(false);
       if (!hasDraggableData(active)) return;
       return `Dragging ${active.data.current?.type} cancelled.`;
     },
@@ -321,56 +391,60 @@ export function Board() {
   };
 
   return (
-    <DndContext
-      accessibility={{
-        announcements,
-      }}
-      sensors={sensors}
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
-      onDragOver={onDragOver}
-    >
-      {selectedTask && !isPanelMaximized && (
-        <div className="fixed inset-0 bg-black/5 z-30" onClick={handleClosePanel} />
-      )}
-      <BoardContainer>
-        <SortableContext items={columnsId}>
-          {columns.map((col) => (
-            <BoardColumn
-              key={col.id}
-              column={col}
-              tasks={tasks.filter((task) => task.columnId === col.id)}
-              estimatedMinHeight={maxTasksPerColumn * 140}
-              onSelectTask={handleSelectTask}
-            />
-          ))}
-        </SortableContext>
-      </BoardContainer>
-
-      {selectedTask && (
-        <TaskDetailPanel
-          task={selectedTask}
-          onClose={handleClosePanel}
-          onToggleMaximize={handleMaximizeToggle}
-          maximized={isPanelMaximized}
-        />
-      )}
-
-      {typeof document !== 'undefined' &&
-        createPortal(
-          <DragOverlay>
-            {activeColumn && (
-              <BoardColumn
-                isOverlay
-                column={activeColumn}
-                tasks={tasks.filter((task) => task.columnId === activeColumn.id)}
-              />
-            )}
-            {activeTask && <TaskCard task={activeTask} isOverlay />}
-          </DragOverlay>,
-          document.body
+    <div className="flex-1 min-h-0 overflow-hidden">
+      <DndContext
+        accessibility={{
+          announcements,
+        }}
+        sensors={sensors}
+        collisionDetection={collisionDetectionStrategy}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+        onDragOver={onDragOver}
+      >
+        {selectedTask && !isPanelMaximized && (
+          <div className="fixed inset-0 bg-black/5 z-30" onClick={handleClosePanel} />
         )}
-    </DndContext>
+        <BoardContainer>
+          <SortableContext items={columnsId}>
+            {columns.map((col) => (
+              <BoardColumn
+                key={col.id}
+                column={col}
+                tasks={tasks.filter((task) => task.columnId === col.id)}
+                estimatedMinHeight={estimatedMinHeight}
+                onSelectTask={handleSelectTask}
+              />
+            ))}
+          </SortableContext>
+        </BoardContainer>
+
+        {selectedTask && (
+          <TaskDetailPanel
+            task={selectedTask}
+            onClose={handleClosePanel}
+            onToggleMaximize={handleMaximizeToggle}
+            maximized={isPanelMaximized}
+          />
+        )}
+
+        {typeof document !== 'undefined' &&
+          createPortal(
+            <DragOverlay>
+              {activeColumn && (
+                <BoardColumn
+                  isOverlay
+                  column={activeColumn}
+                  tasks={tasks.filter((task) => task.columnId === activeColumn.id)}
+                  estimatedMinHeight={estimatedMinHeight}
+                />
+              )}
+              {activeTask && <TaskCard task={activeTask} isOverlay />}
+            </DragOverlay>,
+            document.body
+          )}
+      </DndContext>
+    </div>
   );
 
   function onDragStart(event: DragStartEvent) {
@@ -382,10 +456,11 @@ export function Board() {
     }
 
     if (data?.type === 'Task') {
+      setIsDraggingTask(true);
       setActiveTask(data.task);
       return;
+    }
   }
-}
 
 function TaskDetailPanel({
   task,
@@ -470,6 +545,7 @@ function TaskDetailPanel({
   function onDragEnd(event: DragEndEvent) {
     setActiveColumn(null);
     setActiveTask(null);
+    setIsDraggingTask(false);
 
     const { active, over } = event;
     if (!over) return;
@@ -531,6 +607,23 @@ function TaskDetailPanel({
 
     const isOverAColumn = overData?.type === 'Column';
 
+    // Determine whether drop is closer to column header or footer
+    const translatedRect = event.active.rect.current.translated;
+    const initialRect = event.active.rect.current.initial;
+    const overRect = event.over?.rect;
+    const activeCenterY =
+      translatedRect && typeof translatedRect.top === 'number'
+        ? translatedRect.top + translatedRect.height / 2
+        : initialRect && typeof initialRect.top === 'number'
+          ? initialRect.top + event.delta.y + initialRect.height / 2
+          : null;
+    const overMidY =
+      overRect && typeof overRect.top === 'number'
+        ? overRect.top + overRect.height / 2
+        : null;
+    const preferInsertAt =
+      activeCenterY !== null && overMidY !== null ? (activeCenterY < overMidY ? 'start' : 'end') : 'start';
+
     if (isActiveATask && isOverAColumn) {
       setTasks((allTasks) => {
         const activeIndex = allTasks.findIndex((t) => t.id === activeId);
@@ -543,8 +636,18 @@ function TaskDetailPanel({
         const targetColumnId = overId as ColumnId;
         activeTaskData.columnId = targetColumnId;
 
-        const insertIndex = updated.findIndex((t) => t.columnId === targetColumnId);
-        const safeInsertIndex = insertIndex === -1 ? updated.length : insertIndex;
+        const targetIndexes = updated
+          .map((t, index) => (t.columnId === targetColumnId ? index : -1))
+          .filter((index) => index !== -1);
+        const firstTargetIndex = targetIndexes[0];
+        const lastTargetIndex = targetIndexes[targetIndexes.length - 1];
+
+        const safeInsertIndex =
+          targetIndexes.length === 0
+            ? updated.length
+            : preferInsertAt === 'start'
+              ? firstTargetIndex
+              : lastTargetIndex + 1;
 
         updated.splice(safeInsertIndex, 0, activeTaskData);
         return updated;
