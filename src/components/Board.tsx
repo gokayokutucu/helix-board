@@ -20,21 +20,11 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { SortableContext, arrayMove } from '@dnd-kit/sortable';
-import { ArrowLeft, Link as LinkIcon, Maximize2, Minimize2, MoreVertical } from 'lucide-react';
-
 import { BoardColumn, BoardContainer, type Column } from './BoardColumn';
 import { coordinateGetter } from './multipleContainersKeyboardPreset';
 import { TaskCard, type Task } from './TaskCard';
+import { TaskDetailWindow } from './TaskDetailWindow';
 import { hasDraggableData } from './utils';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { Separator } from './ui/separator';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from './ui/dropdown-menu';
 
 const defaultCols = [
   {
@@ -420,7 +410,7 @@ export function Board() {
         </BoardContainer>
 
         {selectedTask && (
-          <TaskDetailPanel
+          <TaskDetailWindow
             task={selectedTask}
             onClose={handleClosePanel}
             onToggleMaximize={handleMaximizeToggle}
@@ -462,86 +452,6 @@ export function Board() {
     }
   }
 
-function TaskDetailPanel({
-  task,
-  onClose,
-  onToggleMaximize,
-  maximized,
-}: {
-  task: Task;
-  onClose: () => void;
-  onToggleMaximize: () => void;
-  maximized: boolean;
-}) {
-  const containerClasses = maximized
-    ? 'fixed top-0 right-0 bottom-0 left-64 md:left-64 z-40 bg-white shadow-2xl'
-    : 'fixed top-0 right-0 h-full w-full md:w-[45%] max-w-4xl z-40 bg-white shadow-2xl border-l';
-
-  return (
-    <aside className={containerClasses}>
-      <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-white">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={onToggleMaximize}>
-            {maximized ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-          </Button>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            Subscribe
-          </Button>
-          <Button variant="ghost" size="icon">
-            <LinkIcon className="h-4 w-4" />
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>Make a copy</DropdownMenuItem>
-              <DropdownMenuItem>Open new tab</DropdownMenuItem>
-              <DropdownMenuItem>Archive</DropdownMenuItem>
-              <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-
-      <div className="px-6 py-4 space-y-4 overflow-y-auto h-[calc(100%-56px)]">
-        <div className="text-xs text-gray-500 font-medium tracking-wide">{task.key}</div>
-        <h1 className="text-2xl font-semibold text-gray-900">{task.content}</h1>
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="text-xs">
-            {task.columnId}
-          </Badge>
-          {task.dueDate && (
-            <Badge variant="outline" className="text-xs">
-              {task.dueDate}
-            </Badge>
-          )}
-        </div>
-        <Separator />
-        <div className="space-y-3 text-gray-700 leading-6">
-          {task.description ? (
-            <p>{task.description}</p>
-          ) : (
-            <p className="text-sm text-gray-500">No description added yet.</p>
-          )}
-          <div className="rounded-lg border bg-gray-50 p-4">
-            <h3 className="text-sm font-semibold mb-2">Tip</h3>
-            <p className="text-sm text-gray-700">
-              Create quick updates, share checklists, or attach files so your team stays aligned.
-            </p>
-          </div>
-        </div>
-      </div>
-    </aside>
-  );
-}
   function onDragEnd(event: DragEndEvent) {
     setActiveColumn(null);
     setActiveTask(null);

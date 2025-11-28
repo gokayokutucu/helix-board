@@ -30,7 +30,7 @@ interface BoardColumnProps {
   onSelectTask?: (taskId: string) => void;
 }
 
-export function BoardColumn({ column, tasks, isOverlay, estimatedMinHeight }: BoardColumnProps) {
+export function BoardColumn({ column, tasks, isOverlay, estimatedMinHeight, onSelectTask }: BoardColumnProps) {
   const tasksIds = useMemo(() => {
     return tasks.map((task) => task.id);
   }, [tasks]);
@@ -83,7 +83,7 @@ export function BoardColumn({ column, tasks, isOverlay, estimatedMinHeight }: Bo
         >
           <SortableContext items={tasksIds}>
             {tasks.map((task) => (
-              <TaskCard key={task.id} task={task} />
+              <TaskCard key={task.id} task={task} onSelect={onSelectTask} />
             ))}
           </SortableContext>
         </CardContent>

@@ -7,7 +7,7 @@ import { Calendar, BarChart2, AlertCircle } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { Card, CardContent, CardFooter, CardHeader } from './ui/card';
 import { Avatar, AvatarFallback } from './ui/avatar';
-import { ColumnId } from './Board';
+import type { ColumnId } from './Board';
 
 export interface Task {
   id: UniqueIdentifier;
@@ -26,6 +26,7 @@ export interface Task {
 interface TaskCardProps {
   task: Task;
   isOverlay?: boolean;
+  onSelect?: (taskId: string) => void;
 }
 
 export type TaskType = 'Task';
@@ -35,7 +36,7 @@ export interface TaskDragData {
   task: Task;
 }
 
-export function TaskCard({ task, isOverlay }: TaskCardProps) {
+export function TaskCard({ task, isOverlay, onSelect }: TaskCardProps) {
   const { setNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({
     id: task.id,
     data: {
@@ -71,6 +72,18 @@ export function TaskCard({ task, isOverlay }: TaskCardProps) {
   const dueDateText = task.dueDate ?? 'No due date';
   const assignees = task.assignees ?? [];
 
+  const handleSelect = () => {
+    if (isOverlay) return;
+    onSelect?.(task.id as string);
+  };
+
+  const handleKeyDown: React.KeyboardEventHandler<HTMLDivElement> = (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleSelect();
+    }
+  };
+
   return (
     <Card
       ref={setNodeRef}
@@ -78,6 +91,10 @@ export function TaskCard({ task, isOverlay }: TaskCardProps) {
       className={variants({
         dragging: isOverlay ? 'overlay' : isDragging ? 'over' : undefined,
       })}
+      onClick={handleSelect}
+      onKeyDown={handleKeyDown}
+      role="button"
+      tabIndex={isOverlay ? -1 : 0}
     >
       <CardHeader
         {...attributes}
