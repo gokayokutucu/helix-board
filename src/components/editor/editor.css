@@ -78,6 +78,11 @@
   display: inline-block;
 }
 
+.lexical-editor .image-wrapper img {
+  display: block;
+  max-width: 100%;
+}
+
 .lexical-editor .image-resizer {
   position: absolute;
   width: 12px;
@@ -92,6 +97,11 @@
 
 .lexical-editor .image-wrapper img {
   display: block;
+  max-width: 100%;
+}
+
+.tiptap-image-upload {
+  border: 1px dashed #cbd5e1;
 }
 
 .lexical-modal-backdrop {
@@ -194,6 +204,18 @@
 .lexical-modal-confirm:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.tiptap {
+  min-height: 120px;
+}
+
+.tiptap p.is-editor-empty:first-child::before {
+  color: #94a3b8;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
 }
 
 .lexical-editor .editor-list-ol,

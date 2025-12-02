@@ -1,6 +1,4 @@
-import { useState } from 'react';
 import { Avatar, AvatarFallback } from './ui/avatar';
-import { Button } from './ui/button';
 import { formatDistanceToNow } from 'date-fns';
 import { CommentEditor } from './editor/CommentEditor';
 
@@ -18,14 +16,11 @@ type CommentsSectionProps = {
 };
 
 export function CommentsSection({ comments, onAdd }: CommentsSectionProps) {
-  const [inputValue, setInputValue] = useState('');
-
-  const handleSubmit = () => {
+  const handleSubmit = (html: string) => {
     const temp = document.createElement('div');
-    temp.innerHTML = inputValue;
+    temp.innerHTML = html;
     if (!temp.textContent?.trim()) return;
-    onAdd(inputValue);
-    setInputValue('');
+    onAdd(html);
   };
 
   return (
@@ -45,19 +40,17 @@ export function CommentsSection({ comments, onAdd }: CommentsSectionProps) {
                 <span>•</span>
                 <span>{formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}</span>
               </div>
-              <div className="text-sm text-gray-800 prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: comment.contentHtml }} />
+              <div
+                className="text-sm text-gray-800 prose prose-sm max-w-none"
+                dangerouslySetInnerHTML={{ __html: comment.contentHtml }}
+              />
             </div>
           </div>
         ))}
       </div>
 
       <div className="border rounded-lg bg-gray-50 px-3 py-3">
-        <CommentEditor value={inputValue} onChange={setInputValue} />
-        <div className="mt-3 flex justify-end">
-          <Button size="sm" onClick={handleSubmit}>
-            Comment
-          </Button>
-        </div>
+        <CommentEditor onSubmit={handleSubmit} />
       </div>
     </div>
   );
