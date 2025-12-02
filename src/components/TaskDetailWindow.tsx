@@ -85,9 +85,9 @@ export function TaskDetailWindow({ task, onClose, onToggleMaximize, maximized }:
     setComments((prev) => [
       ...prev,
       {
-        id: `comment-${prev.length + 1}`,
-        authorName: 'You',
-        authorInitials: 'YY',
+        id: typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `comment-${prev.length + 1}`,
+        authorName: 'Current User',
+        authorInitials: 'CU',
         createdAt: new Date().toISOString(),
         contentHtml,
       },

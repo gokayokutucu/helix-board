@@ -16,13 +16,6 @@ type CommentsSectionProps = {
 };
 
 export function CommentsSection({ comments, onAdd }: CommentsSectionProps) {
-  const handleSubmit = (html: string) => {
-    const temp = document.createElement('div');
-    temp.innerHTML = html;
-    if (!temp.textContent?.trim()) return;
-    onAdd(html);
-  };
-
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-semibold text-gray-900">Comments</h3>
@@ -49,9 +42,7 @@ export function CommentsSection({ comments, onAdd }: CommentsSectionProps) {
         ))}
       </div>
 
-      <div className="border rounded-lg bg-gray-50 px-3 py-3">
-        <CommentEditor onSubmit={handleSubmit} />
-      </div>
+      <CommentEditor onSubmit={onAdd} />
     </div>
   );
 }

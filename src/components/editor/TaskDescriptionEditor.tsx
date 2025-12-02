@@ -6,7 +6,6 @@ import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 import TextAlign from '@tiptap/extension-text-align';
 import Link from '@tiptap/extension-link';
-import Image from '@tiptap/extension-image';
 import Table from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
 import TableCell from '@tiptap/extension-table-cell';
@@ -17,6 +16,7 @@ import FileHandler from '@tiptap/extension-file-handler';
 
 import { TiptapToolbar } from './TiptapToolbar';
 import { ImageUploadNode } from './extensions/ImageUploadNode';
+import { ImageNode } from './extensions/ImageNode';
 
 type TaskDescriptionEditorProps = {
   value?: string | null;
@@ -48,7 +48,7 @@ export function TaskDescriptionEditor({ value, onChange }: TaskDescriptionEditor
       TaskList,
       TaskItem,
       Link.configure({ openOnClick: true, autolink: true }),
-      Image,
+      ImageNode,
       Highlight,
       TextAlign.configure({
         types: ['heading', 'paragraph'],

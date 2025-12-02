@@ -104,6 +104,25 @@
   border: 1px dashed #cbd5e1;
 }
 
+.tiptap-image-node {
+  display: inline-block;
+  max-width: 100%;
+  margin: 0.5rem 0;
+}
+
+.tiptap-image-node img {
+  max-width: 100%;
+  display: block;
+  border-radius: 8px;
+}
+
+.tiptap-image-node.selected img {
+  outline: 0.125rem solid rgba(0, 0, 0, 0);
+  outline-color: var(--tt-brand-color-500, #6366f1);
+  outline-offset: 2px;
+  margin: 2rem 0;
+}
+
 .lexical-modal-backdrop {
   position: fixed;
   inset: 0;
