@@ -1,0 +1,24 @@
+{
+  "name": "@lexical/vanilla-js-example",
+  "private": true,
+  "version": "0.38.2",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "monorepo:dev": "vite -c vite.config.monorepo.ts",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@lexical/dragon": "0.38.2",
+    "@lexical/history": "0.38.2",
+    "@lexical/rich-text": "0.38.2",
+    "@lexical/utils": "0.38.2",
+    "lexical": "0.38.2"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.4"
+  }
+}

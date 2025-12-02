@@ -1,4 +1,5 @@
 import type React from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ColumnId } from './Board';
 import type { Task } from './TaskCard';
 import { ArrowLeft, Link as LinkIcon, Maximize2, Minimize2, MoreVertical } from 'lucide-react';
@@ -12,6 +13,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
+import { TaskDescriptionEditor } from './editor/TaskDescriptionEditor';
+import { SubWorkItemsGrid } from './SubWorkItemsGrid';
+import { CommentsSection, type Comment } from './CommentsSection';
 
 interface TaskDetailWindowProps {
   task: Task;
@@ -33,6 +37,63 @@ const priorityLabel: Record<NonNullable<Task['priority']>, { label: string; tone
 };
 
 export function TaskDetailWindow({ task, onClose, onToggleMaximize, maximized }: TaskDetailWindowProps) {
+  const [description, setDescription] = useState<string>(task.description ?? '');
+  const [comments, setComments] = useState<Comment[]>([
+    {
+      id: 'c1',
+      authorName: 'Jane Doe',
+      authorInitials: 'JD',
+      createdAt: new Date().toISOString(),
+      contentHtml: 'Thanks for picking this up!',
+    },
+    {
+      id: 'c2',
+      authorName: 'Alex Lee',
+      authorInitials: 'AL',
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
+      contentHtml: 'Let’s align with design before closing.',
+    },
+  ]);
+
+  const subTasks: Task[] = useMemo(
+    () => [
+      {
+        ...task,
+        id: `${String(task.id)}-sub-1`,
+        key: `${task.key}-S1`,
+        content: 'Review API contract with backend',
+        columnId: 'in-progress',
+        dueDate: '18 May, 2025',
+      },
+      {
+        ...task,
+        id: `${String(task.id)}-sub-2`,
+        key: `${task.key}-S2`,
+        content: 'Finalize acceptance criteria',
+        columnId: 'done',
+        dueDate: '12 May, 2025',
+      },
+    ],
+    [task]
+  );
+
+  useEffect(() => {
+    setDescription(task.description ?? '');
+  }, [task.description, task.id]);
+
+  const handleAddComment = (contentHtml: string) => {
+    setComments((prev) => [
+      ...prev,
+      {
+        id: `comment-${prev.length + 1}`,
+        authorName: 'You',
+        authorInitials: 'YY',
+        createdAt: new Date().toISOString(),
+        contentHtml,
+      },
+    ]);
+  };
+
   const containerClasses = maximized
     ? 'fixed top-0 right-0 bottom-0 left-64 md:left-64 z-40 bg-white shadow-2xl'
     : 'fixed top-0 right-0 h-full w-full md:w-[45%] max-w-4xl z-40 bg-white shadow-2xl border-l';
@@ -94,39 +155,33 @@ export function TaskDetailWindow({ task, onClose, onToggleMaximize, maximized }:
             <p className="text-sm text-gray-500 mt-1">Work item detail</p>
           </div>
 
+          <TaskDescriptionEditor key={task.id} value={description} onChange={setDescription} />
+
           <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" size="sm">
-              Add sub-task
+            <Button variant="secondary" size="sm" onClick={() => console.log('Add sub-work item')}>
+              Add sub-work item
             </Button>
-            <Button variant="secondary" size="sm">
+            <Button variant="secondary" size="sm" onClick={() => console.log('Add relation')}>
               Add relation
             </Button>
-            <Button variant="secondary" size="sm">
+            <Button variant="secondary" size="sm" onClick={() => console.log('Add link')}>
               Add link
             </Button>
-            <Button variant="secondary" size="sm">
+            <Button variant="secondary" size="sm" onClick={() => console.log('Attach')}>
               Attach
             </Button>
-            <Button variant="secondary" size="sm">
+            <Button variant="secondary" size="sm" onClick={() => console.log('Link pages')}>
               Link pages
             </Button>
           </div>
 
           <Separator />
 
-          <div className="space-y-3 text-gray-700 leading-6">
-            {task.description ? (
-              <p>{task.description}</p>
-            ) : (
-              <p className="text-sm text-gray-500">No description added yet.</p>
-            )}
-            <div className="rounded-lg border bg-gray-50 p-4">
-              <h3 className="text-sm font-semibold mb-2">Tip</h3>
-              <p className="text-sm text-gray-700">
-                Create quick updates, share checklists, or attach files so your team stays aligned.
-              </p>
-            </div>
-          </div>
+          <SubWorkItemsGrid parentTask={task} items={subTasks} />
+
+          <Separator />
+
+          <CommentsSection comments={comments} onAdd={handleAddComment} />
         </div>
 
         <div className="w-full md:w-80 border-t md:border-t-0 md:border-l bg-gray-50/60 px-6 py-5 overflow-y-auto">
