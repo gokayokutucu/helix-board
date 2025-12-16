@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import type { ColumnId } from './Board';
+
 import type { Task } from './TaskCard';
 import { ArrowLeft, Link as LinkIcon, Maximize2, Minimize2, MoreVertical } from 'lucide-react';
 
@@ -24,11 +24,20 @@ interface TaskDetailWindowProps {
   maximized: boolean;
 }
 
-const statusLabels: Record<ColumnId, { label: string; tone: string }> = {
-  todo: { label: 'Todo', tone: 'bg-gray-100 text-gray-800 border-gray-200' },
-  'in-progress': { label: 'In progress', tone: 'bg-orange-50 text-orange-700 border-orange-200' },
-  done: { label: 'Done', tone: 'bg-green-50 text-green-700 border-green-200' },
+// Map known statuses
+const statusLabels: Record<string, { label: string; tone: string }> = {
+  Todo: { label: 'Todo', tone: 'bg-gray-100 text-gray-800 border-gray-200' },
+  InProgress: { label: 'In progress', tone: 'bg-orange-50 text-orange-700 border-orange-200' },
+  Done: { label: 'Done', tone: 'bg-green-50 text-green-700 border-green-200' },
+  Untagged: { label: 'Unassigned', tone: 'bg-slate-100 text-slate-700 border-slate-200' },
 };
+
+const defaultStatusLabel = {
+  label: 'Other',
+  tone: 'bg-gray-100 text-gray-800 border-gray-200',
+};
+
+
 
 const priorityLabel: Record<NonNullable<Task['priority']>, { label: string; tone: string }> = {
   high: { label: 'High', tone: 'bg-red-50 text-red-700 border-red-200' },
@@ -37,7 +46,10 @@ const priorityLabel: Record<NonNullable<Task['priority']>, { label: string; tone
 };
 
 export function TaskDetailWindow({ task, onClose, onToggleMaximize, maximized }: TaskDetailWindowProps) {
+  const currentStatus = statusLabels[task.columnId] ?? defaultStatusLabel;
+
   const [description, setDescription] = useState<string>(task.description ?? '');
+  
   const [comments, setComments] = useState<Comment[]>([
     {
       id: 'c1',
@@ -53,7 +65,9 @@ export function TaskDetailWindow({ task, onClose, onToggleMaximize, maximized }:
       createdAt: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
       contentHtml: 'Let’s align with design before closing.',
     },
+    
   ]);
+  
 
   const subTasks: Task[] = useMemo(
     () => [
@@ -113,9 +127,17 @@ export function TaskDetailWindow({ task, onClose, onToggleMaximize, maximized }:
           <Button variant="outline" size="sm">
             Subscribe
           </Button>
-          <Button variant="ghost" size="icon">
-            <LinkIcon className="h-4 w-4" />
-          </Button>
+          {task.permalink && (
+  <Button
+    variant="ghost"
+    size="icon"
+    onClick={() => window.open(task.permalink, '_blank', 'noreferrer')}
+    title="Open in Wrike"
+  >
+    <LinkIcon className="h-4 w-4" />
+  </Button>
+)}
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon">
@@ -136,9 +158,18 @@ export function TaskDetailWindow({ task, onClose, onToggleMaximize, maximized }:
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
           <div className="flex items-center gap-3 text-sm text-gray-500 font-medium tracking-wide">
             <span className="px-2 py-1 rounded-md bg-gray-100 text-gray-800 border border-gray-200">{task.key}</span>
-            <Badge variant="outline" className={`${statusLabels[task.columnId].tone} text-xs`}>
-              {statusLabels[task.columnId].label}
-            </Badge>
+      <div className="flex items-center gap-2">
+  <Badge variant="outline" className={`${currentStatus.tone} text-xs`}>
+    {currentStatus.label}
+  </Badge>
+
+  {task.rawStatus && (
+    <span className="text-xs text-slate-500">
+      Wrike: {task.rawStatus}
+    </span>
+  )}
+</div>
+
             {task.priority && (
               <Badge variant="outline" className={`${priorityLabel[task.priority].tone} text-xs`}>
                 {priorityLabel[task.priority].label}
@@ -153,7 +184,19 @@ export function TaskDetailWindow({ task, onClose, onToggleMaximize, maximized }:
           <div>
             <h1 className="text-2xl font-semibold text-gray-900">{task.content}</h1>
             <p className="text-sm text-gray-500 mt-1">Work item detail</p>
+
           </div>
+{task.permalink && (
+  <a
+    href={task.permalink}
+    target="_blank"
+    rel="noreferrer"
+    className="mt-1 inline-flex items-center gap-1 text-xs text-sky-600 hover:underline"
+  >
+    Open in Wrike
+    <span aria-hidden="true">↗</span>
+  </a>
+)}
 
           <TaskDescriptionEditor key={task.id} value={description} onChange={setDescription} />
 
@@ -188,9 +231,10 @@ export function TaskDetailWindow({ task, onClose, onToggleMaximize, maximized }:
           <h3 className="text-sm font-semibold text-gray-900 mb-3">Properties</h3>
           <div className="space-y-3 text-sm">
             <PropertyRow label="State">
-              <Badge variant="outline" className={`${statusLabels[task.columnId].tone} text-xs`}>
-                {statusLabels[task.columnId].label}
-              </Badge>
+             <Badge variant="outline" className={`${currentStatus.tone} text-xs`}>
+  {currentStatus.label}
+</Badge>
+
             </PropertyRow>
             <PropertyRow label="Priority">
               {task.priority ? (

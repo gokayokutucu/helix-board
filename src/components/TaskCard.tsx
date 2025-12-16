@@ -12,6 +12,7 @@ import type { ColumnId } from './Board';
 export interface Task {
   id: UniqueIdentifier;
   columnId: ColumnId;
+  columnTitle?: string;
   content: string;
   key: string;
   dueDate?: string;
@@ -21,6 +22,8 @@ export interface Task {
     color: string;
   }>;
   priority?: 'high' | 'medium' | 'low';
+    permalink?: string;       // Wrike link
+  rawStatus?: string;   
 }
 
 interface TaskCardProps {
@@ -62,13 +65,8 @@ export function TaskCard({ task, isOverlay, onSelect }: TaskCardProps) {
     },
   });
 
-  const statusConfig = {
-    'in-progress': { label: 'In progress', className: 'bg-orange-50 text-orange-700 border-orange-200' },
-    done: { label: 'Done', className: 'bg-green-50 text-green-700 border-green-200' },
-    todo: { label: 'Todo', className: 'bg-gray-100 text-gray-700 border-gray-200' },
-  };
-
-  const status = statusConfig[task.columnId] ?? statusConfig.todo;
+  const statusLabel = task.columnTitle ?? String(task.columnId);
+  const statusClassName = 'bg-gray-50 text-gray-700 border-gray-200';
   const dueDateText = task.dueDate ?? 'No due date';
   const assignees = task.assignees ?? [];
 
@@ -120,12 +118,9 @@ export function TaskCard({ task, isOverlay, onSelect }: TaskCardProps) {
         <div className="flex items-center gap-3 text-xs w-full justify-between">
           <div className="flex items-center gap-2">
             <BarChart2 className="w-3 h-3 text-gray-400" />
-            <Badge variant="outline" className={`text-xs px-2 py-0 border ${status.className}`}>
+            <Badge variant="outline" className={`text-xs px-2 py-0 border ${statusClassName}`}>
               <div className="flex items-center gap-1">
-                {task.columnId === 'in-progress' && <span className="text-orange-600">●</span>}
-                {task.columnId === 'done' && <span className="text-green-600">✓</span>}
-                {task.columnId === 'todo' && <span className="text-gray-400">○</span>}
-                <span>{status.label}</span>
+                <span>{statusLabel}</span>
               </div>
             </Badge>
 
@@ -137,7 +132,10 @@ export function TaskCard({ task, isOverlay, onSelect }: TaskCardProps) {
           <div className="flex items-center -space-x-1">
             {assignees.map((assignee, index) => (
               <Avatar key={index} className="w-6 h-6 border-2 border-white">
-                <AvatarFallback className={assignee.color + ' text-white text-xs font-medium'}>
+                <AvatarFallback
+                  className={(assignee.color?.startsWith('#') ? '' : assignee.color) + ' text-white text-xs font-medium'}
+                  style={assignee.color?.startsWith('#') ? { backgroundColor: assignee.color } : undefined}
+                >
                   {assignee.initials}
                 </AvatarFallback>
               </Avatar>

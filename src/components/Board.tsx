@@ -26,159 +26,37 @@ import { TaskCard, type Task } from './TaskCard';
 import { TaskDetailWindow } from './TaskDetailWindow';
 import { hasDraggableData } from './utils';
 
-const defaultCols = [
-  {
-    id: 'todo' as const,
-    title: 'Todo',
-  },
-  {
-    id: 'in-progress' as const,
-    title: 'In progress',
-  },
-  {
-    id: 'done' as const,
-    title: 'Done',
-  },
-] satisfies Column[];
+export type ColumnId = string;
 
-export type ColumnId = (typeof defaultCols)[number]['id'];
 
-const initialTasks: Task[] = [
-  {
-    id: 'task1',
-    columnId: 'done',
-    content: 'Project initiation and planning',
-    description: 'Project initiation and planning',
-    key: 'ENA 14',
-    priority: 'high',
-    dueDate: '15 Apr, 2025',
-    assignees: [{ initials: 'JD', color: 'bg-blue-600' }],
-  },
-  {
-    id: 'task2',
-    columnId: 'done',
-    content: 'Gather requirements from stakeholders',
-    description: 'Gather requirements from stakeholders',
-    key: 'CON 20',
-    dueDate: '12 Apr, 2025',
-    assignees: [
-      { initials: 'MR', color: 'bg-green-600' },
-      { initials: 'AL', color: 'bg-orange-600' },
-    ],
-  },
-  {
-    id: 'task3',
-    columnId: 'done',
-    content: 'Create wireframes and mockups',
-    description: 'Create wireframes and mockups',
-    key: 'CON 24',
-    dueDate: '10 Apr, 2025',
-    assignees: [{ initials: 'RG', color: 'bg-teal-600' }],
-  },
-  {
-    id: 'task4',
-    columnId: 'in-progress',
-    content: 'Develop homepage layout',
-    description: 'Develop homepage layout',
-    key: 'DES 42',
-    dueDate: '22 Apr, 2025',
-    assignees: [{ initials: 'SB', color: 'bg-purple-600' }],
-  },
-  {
-    id: 'task5',
-    columnId: 'in-progress',
-    content: 'Design color scheme and typography',
-    description: 'Design color scheme and typography',
-    key: 'DES 65',
-    priority: 'high',
-    dueDate: '25 Apr, 2025',
-    assignees: [{ initials: 'TK', color: 'bg-green-600' }],
-  },
-  {
-    id: 'task6',
-    columnId: 'todo',
-    content: 'Implement user authentication',
-    description: 'Implement user authentication',
-    key: 'CON 51',
-    dueDate: '28 Apr, 2025',
-    assignees: [
-      { initials: 'DM', color: 'bg-orange-600' },
-      { initials: 'NK', color: 'bg-indigo-600' },
-    ],
-  },
-  {
-    id: 'task7',
-    columnId: 'todo',
-    content: 'Build contact us page',
-    description: 'Build contact us page',
-    key: 'CAM 80',
-    dueDate: '30 Apr, 2025',
-    assignees: [{ initials: 'JD', color: 'bg-blue-600' }],
-  },
-  {
-    id: 'task8',
-    columnId: 'todo',
-    content: 'Create product catalog',
-    description: 'Create product catalog',
-    key: 'CON 75',
-    dueDate: '02 May, 2025',
-    assignees: [{ initials: 'AL', color: 'bg-green-600' }],
-  },
-  {
-    id: 'task9',
-    columnId: 'todo',
-    content: 'Develop about us page',
-    description: 'Develop about us page',
-    key: 'DES 32',
-    dueDate: '06 May, 2025',
-    assignees: [
-      { initials: 'RG', color: 'bg-teal-600' },
-      { initials: 'PL', color: 'bg-amber-600' },
-    ],
-  },
-  {
-    id: 'task10',
-    columnId: 'todo',
-    content: 'Optimize website for mobile devices',
-    description: 'Optimize website for mobile devices',
-    key: 'ENA 37',
-    dueDate: '08 May, 2025',
-    assignees: [{ initials: 'LH', color: 'bg-red-600' }],
-  },
-  {
-    id: 'task11',
-    columnId: 'todo',
-    content: 'Integrate payment gateway',
-    description: 'Integrate payment gateway',
-    key: 'ENA 39',
-    dueDate: '12 May, 2025',
-    assignees: [{ initials: 'MK', color: 'bg-cyan-600' }],
-  },
-  {
-    id: 'task12',
-    columnId: 'todo',
-    content: 'Perform testing and bug fixing',
-    description: 'Perform testing and bug fixing',
-    key: 'CAM 70',
-    dueDate: '15 May, 2025',
-    assignees: [
-      { initials: 'SB', color: 'bg-purple-600' },
-      { initials: 'TW', color: 'bg-indigo-600' },
-    ],
-  },
-  {
-    id: 'task13',
-    columnId: 'todo',
-    content: 'Launch website and deploy to server',
-    description: 'Launch website and deploy to server',
-    key: 'CAM 75',
-    dueDate: '20 May, 2025',
-    assignees: [
-      { initials: 'MR', color: 'bg-green-600' },
-      { initials: 'AL', color: 'bg-orange-600' },
-    ],
-  },
-];
+// Types coming from the API
+type ApiBoardColumn = {
+  id: string;
+  title: string;
+};
+
+type ApiBoardAssignee = {
+  initials?: string;
+  name?: string;
+  color?: string;
+};
+
+type ApiBoardTask = {
+  id: string;
+  columnId: string;
+  title: string;
+  description?: string;
+  key?: string;
+  importance?: string;
+  dueDate?: string;
+  assignees?: ApiBoardAssignee[];
+    permalink?: string;
+  rawWrikeStatus?: string;
+};
+
+
+const defaultCols: Column[] = [];
+const initialTasks: Task[] = [];
 
 const CARD_HEIGHT = 140;
 const MIN_CARD_ROWS = 1.5;
@@ -204,7 +82,10 @@ const collisionDetectionStrategy: CollisionDetection = (args) => {
       .map((collision) => {
         const container = droppableContainers.find((item) => item.id === collision.id);
         const rect = container?.rect.current;
-        const translatedRect = (rect as any)?.translated;
+       type RectWithTranslated = DOMRect & { translated?: DOMRect };
+
+const translatedRect = (rect as RectWithTranslated | null)?.translated;
+
         const resolvedRect = translatedRect ?? rect;
         if (!resolvedRect) {
           return { collision, distance: Number.POSITIVE_INFINITY };
@@ -244,6 +125,7 @@ function getMaxTasksPerColumn(cols: Column[], tasks: Task[]) {
 export function Board() {
   const [columns, setColumns] = useState<Column[]>(defaultCols);
   const pickedUpTaskColumn = useRef<ColumnId | null>(null);
+  const previousTasks = useRef<Task[]>(initialTasks);
   const columnsId = useMemo(() => columns.map((col) => col.id), [columns]);
 
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
@@ -256,6 +138,61 @@ export function Board() {
 
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const estimatedMinHeight = useMemo(() => minColumnTaskCount * CARD_HEIGHT, [minColumnTaskCount]);
+  const apiBase = import.meta.env.VITE_API_BASE_URL ?? '';
+
+  const [loadingTaskId, setLoadingTaskId] = useState<string | null>(null);
+const [taskDetailsError, setTaskDetailsError] = useState<string | null>(null);
+
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const folderId = 'MQAAAABn3rdj';
+
+    async function loadBoard() {
+      try {
+        const resp = await fetch(`${apiBase}/api/board/folders/${folderId}`, { signal: controller.signal });
+        if (!resp.ok) {
+          throw new Error(`Board load failed with status ${resp.status}`);
+        }
+        const data = await resp.json();
+        console.log('Board payload', data);
+        const mappedColumns: Column[] = (data.columns ?? []).map((c: ApiBoardColumn) => ({
+  id: c.id,
+  title: c.title,
+}));
+
+        const columnTitleMap = Object.fromEntries(mappedColumns.map((c) => [c.id, c.title]));
+
+      const mappedTasks: Task[] = (data.tasks ?? []).map((t: ApiBoardTask) => ({
+  id: t.id,
+  columnId: t.columnId,
+  columnTitle: columnTitleMap[t.columnId] ?? t.columnId,
+  content: t.title,
+  description: t.description,
+  key: t.key ?? t.id,
+  priority: t.importance?.toLowerCase?.() === 'high' ? 'high' : undefined,
+  dueDate: t.dueDate ? formatDate(t.dueDate) : undefined,
+  assignees: (t.assignees ?? []).map((a: ApiBoardAssignee) => ({
+    initials: a.initials ?? a.name?.slice(0, 2)?.toUpperCase?.() ?? '??',
+    color: a.color ?? '#64748b',
+  })),
+    permalink: t.permalink,       // from BoardTaskDto
+  rawStatus: t.rawWrikeStatus,  // from BoardTaskDto
+}));
+
+
+        setColumns(mappedColumns);
+        setTasks(mappedTasks);
+        setMinColumnTaskCount(getMinColumnTaskCount(mappedColumns, mappedTasks));
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        console.error(err);
+      }
+    }
+
+    loadBoard();
+    return () => controller.abort();
+  }, [apiBase]);
 
   useEffect(() => {
     if (isDraggingTask) return;
@@ -273,6 +210,7 @@ export function Board() {
       coordinateGetter: coordinateGetter,
     })
   );
+  
 
   function getDraggingTaskData(taskId: UniqueIdentifier, columnId: ColumnId) {
     const tasksInColumn = tasks.filter((task) => task.columnId === columnId);
@@ -357,10 +295,74 @@ export function Board() {
     },
   };
 
-  const handleSelectTask = (taskId: string) => {
-    setSelectedTaskId(taskId);
-    setIsPanelMaximized(false);
-  };
+async function fetchTaskDetails(taskId: string) {
+  if (!apiBase) return;
+
+  try {
+    setLoadingTaskId(taskId);
+    setTaskDetailsError(null);
+
+    const resp = await fetch(`${apiBase}/api/board/tasks/${taskId}`);
+
+    if (!resp.ok) {
+      throw new Error(`Failed to load task details (status ${resp.status})`);
+    }
+
+    const dto = (await resp.json()) as ApiBoardTask;
+
+
+    // dto is a BoardTaskDto from the API
+    setTasks((prev) =>
+  prev.map((t) =>
+    t.id === dto.id
+      ? {
+          ...t,
+          content: dto.title,
+          description: dto.description,
+          key: dto.key ?? dto.id,
+          priority:
+            dto.importance?.toLowerCase?.() === 'high'
+              ? 'high'
+              : dto.importance?.toLowerCase?.() === 'medium'
+              ? 'medium'
+              : dto.importance?.toLowerCase?.() === 'low'
+              ? 'low'
+              : undefined,
+          dueDate: dto.dueDate ? formatDate(dto.dueDate) : undefined,
+          assignees: (dto.assignees ?? []).map((a: ApiBoardAssignee) => ({
+            initials:
+              a.initials ??
+              a.name?.slice(0, 2)?.toUpperCase?.() ??
+              '??',
+            color: a.color ?? '#64748b',
+          })),
+          permalink: dto.permalink,
+          rawStatus: dto.rawWrikeStatus,
+        }
+      : t
+  )
+);
+
+  } catch (err) {
+    console.error(err);
+    setTaskDetailsError(
+      err instanceof Error ? err.message : 'Unknown error while loading details'
+    );
+  } finally {
+    setLoadingTaskId(null);
+  }
+}
+
+
+ const handleSelectTask = (taskId: string) => {
+  // open panel immediately with whatever data we already have
+  setSelectedTaskId(taskId);
+  setIsPanelMaximized(false);
+
+  // then fetch richer details from the API (will update tasks array)
+  void fetchTaskDetails(taskId);
+};
+
 
   const handleClosePanel = () => {
     setSelectedTaskId(null);
@@ -409,14 +411,29 @@ export function Board() {
           </SortableContext>
         </BoardContainer>
 
-        {selectedTask && (
-          <TaskDetailWindow
-            task={selectedTask}
-            onClose={handleClosePanel}
-            onToggleMaximize={handleMaximizeToggle}
-            maximized={isPanelMaximized}
-          />
-        )}
+       {selectedTask && (
+  <>
+    {loadingTaskId === selectedTask.id && (
+      <div className="fixed right-4 bottom-4 z-40 rounded bg-slate-900 text-white px-3 py-1 text-sm shadow">
+        Loading task details…
+      </div>
+    )}
+
+    {taskDetailsError && (
+      <div className="fixed right-4 bottom-16 z-40 rounded bg-red-600 text-white px-3 py-1 text-sm shadow">
+        {taskDetailsError}
+      </div>
+    )}
+
+    <TaskDetailWindow
+      task={selectedTask}
+      onClose={handleClosePanel}
+      onToggleMaximize={handleMaximizeToggle}
+      maximized={isPanelMaximized}
+    />
+  </>
+)}
+
 
         {typeof document !== 'undefined' &&
           createPortal(
@@ -448,6 +465,7 @@ export function Board() {
     if (data?.type === 'Task') {
       setIsDraggingTask(true);
       setActiveTask(data.task);
+      previousTasks.current = tasks.map((t) => ({ ...t }));
       return;
     }
   }
@@ -470,15 +488,32 @@ export function Board() {
     if (activeId === overId) return;
 
     const isActiveAColumn = activeData?.type === 'Column';
-    if (!isActiveAColumn) return;
+    if (isActiveAColumn) {
+      setColumns((cols) => {
+        const activeColumnIndex = cols.findIndex((col) => col.id === activeId);
 
-    setColumns((cols) => {
-      const activeColumnIndex = cols.findIndex((col) => col.id === activeId);
+        const overColumnIndex = cols.findIndex((col) => col.id === overId);
 
-      const overColumnIndex = cols.findIndex((col) => col.id === overId);
+        return arrayMove(cols, activeColumnIndex, overColumnIndex);
+      });
+      return;
+    }
 
-      return arrayMove(cols, activeColumnIndex, overColumnIndex);
-    });
+    const isActiveATask = activeData?.type === 'Task';
+    if (!isActiveATask) return;
+
+    const overData = over.data.current;
+    const targetColumnId =
+      overData?.type === 'Task'
+        ? overData.task.columnId
+        : overData?.type === 'Column'
+          ? (over.id as ColumnId)
+          : activeData.task.columnId;
+
+    const fromColumnId = pickedUpTaskColumn.current;
+    if (!fromColumnId || !targetColumnId || fromColumnId === targetColumnId) return;
+
+    persistTaskMove(String(active.id), fromColumnId, targetColumnId);
   }
 
   function onDragOver(event: DragOverEvent) {
@@ -545,6 +580,7 @@ export function Board() {
 
         const targetColumnId = overId as ColumnId;
         activeTaskData.columnId = targetColumnId;
+        activeTaskData.columnTitle = columns.find((c) => c.id === targetColumnId)?.title ?? activeTaskData.columnTitle;
 
         const targetIndexes = updated
           .map((t, index) => (t.columnId === targetColumnId ? index : -1))
@@ -564,4 +600,32 @@ export function Board() {
       });
     }
   }
+
+  async function persistTaskMove(taskId: string, from: ColumnId, to: ColumnId) {
+    try {
+      const resp = await fetch(`${apiBase}/api/board/tasks/${taskId}/move`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from, to }),
+      });
+      if (!resp.ok) {
+        throw new Error(`Move failed with status ${resp.status}`);
+      }
+    } catch (err) {
+      console.error(err);
+      setTasks(previousTasks.current);
+    } finally {
+      pickedUpTaskColumn.current = null;
+    }
+  }
+}
+
+function formatDate(input: string) {
+  const parsed = new Date(input);
+  if (Number.isNaN(parsed.getTime())) return input;
+  return parsed.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
 }
